@@ -5,7 +5,7 @@ import jsonpickle
 import json
 from .source_file_parser import parse_all_entries
 
-logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.INFO)
 
 
 class PackageManager:

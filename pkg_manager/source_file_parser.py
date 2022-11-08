@@ -8,7 +8,7 @@ BUILD_DEPENDENCIES_IND_PREFIX = "Build-Depends-Indep:"
 DIRECTORY_PREFIX = "Directory:"
 FILE_ENTRY_PREFIX = "Files:"
 
-logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.INFO)
 
 
 def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
