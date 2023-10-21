@@ -62,7 +62,7 @@ subprocess.call(cmd, shell=True)
 all_pkg_status = {}
 
 num = 0
-max_num_pkgs = 1
+max_num_pkgs = 100
 for pkgs in packages_available:
     if num >= max_num_pkgs:
         break
@@ -122,6 +122,22 @@ for curr_dir in os.listdir(local_download_folder_for_sources):
                             cstatus.add_build_status("SUCCESS")
                     else:
                         cstatus.add_build_status("FAILED")
+                cmd = "(" + "cd " + extract_dir_name + " && make clean)"
+                ret = subprocess.call(cmd, shell=True)
+                codeql_folder = os.path.join(cdir_fullpath, "codeqldb")
+                create_folder(codeql_folder)
+                cmd = "(" + "cd " + extract_dir_name + " && codeql database create " + codeql_folder + " --language=cpp)"
+                ret = subprocess.call(cmd, shell=True)
+                if ret != 0:
+                    cstatus.add_codeql_status("FAILED")
+                else:
+                    cstatus.add_codeql_status("SUCCESS")
+                cmd = "(" + "cd " + extract_dir_name + " && codeql database analyze " + codeql_folder + " --format=sarif-latest --output=codeqlresults.sarif /home/machiry/tools/codeql/codeqlrepo/cpp/ql/src/codeql-suites/cpp-security-extended.qls)"
+                ret = subprocess.call(cmd, shell=True)
+                if ret != 0:
+                    cstatus.add_codeql_analysis_status("FAILED")
+                else:
+                    cstatus.add_codeql_analysis_status("SUCCESS")
 
 fp = open("all_pkg_status.json", "w")
 json_strs = {}

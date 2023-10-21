@@ -17,7 +17,10 @@ class DebianPkgStats:
         self.build_status = status
     
     def add_codeql_status(self, status:str):
-        self.codeql_status = status
+        self.codeql_db_status = status
+    
+    def add_codeql_analysis_status(self, status:str):
+        self.codeql_analysis_status = status
     
     def toJson(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__)
