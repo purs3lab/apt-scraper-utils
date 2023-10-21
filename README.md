@@ -5,7 +5,7 @@ A humble python API to query, manage and download debian packages.
 
 ## Needed information
 * Source File (`src`): This is a file maintained by apt mirror sites that acts as a catalogue for all the packages in the apt repository.
-    > Example: http://mirror.math.ucdavis.edu/ubuntu/dists/bionic/main/source/Sources.gz download and extract the file.
+    > Example: http://mirror.math.ucdavis.edu/ubuntu/dists/jammy/main/source/Sources.gz download and extract the file.
 * Mirror url (`mirr_base_url`): The base URL for the mirror site.
     > Example: http://mirror.math.ucdavis.edu/ubuntu/
 
