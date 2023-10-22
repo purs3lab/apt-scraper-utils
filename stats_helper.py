@@ -47,6 +47,8 @@ def get_project_sloc(language: str, source_dir: str) -> int:
     source_paths = glob(source_dir + "/**/*.*", recursive=True)
     ps = ProjectSummary()
     for sp in source_paths:
+        if os.path.isdir(sp):
+            continue
         sa = SourceAnalysis.from_file(sp, os.path.basename(source_dir))
         ps.add(sa)
     # Count the number of lines of code for the given language
