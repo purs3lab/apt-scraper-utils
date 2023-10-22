@@ -15,6 +15,7 @@ def setup_vcs_types() -> None:
     VCSType.get_or_create(type_name='debian.anonscm')
     VCSType.get_or_create(type_name='debian.alioth')
     VCSType.get_or_create(type_name='custom.git')
+    VCSType.get_or_create(type_name='unknown')
 
 def get_vcs_type(vcs_url: str) -> VCSType:
     if "salsa.debian" in vcs_url:
@@ -34,4 +35,4 @@ def get_vcs_type(vcs_url: str) -> VCSType:
     elif "git." in vcs_url:
         return VCSType.get(type_name='custom.git')
     else:
-        raise ValueError("Unknown VCS type for URL: {}".format(vcs_url))
+        return VCSType.get(type_name='unknown')
