@@ -38,12 +38,13 @@ def get_project_source_language(source_dir: str) -> Any:
 def get_project_sloc(language: str, source_dir: str) -> int:
     """
     Get the number of lines of code for the given project.
-    :param language: Language of the project.
+    :param language: Language of the project.source_paths = glob(source_dir + "/**/*.*")
+    ps = ProjectSummary()
     :param source_dir: Local file path to the project.
     :return: Number of lines of code for the given project.
     """
     # Add all files in source_dir
-    source_paths = glob(source_dir + "/**/*.*")
+    source_paths = glob(source_dir + "/**/*.*", recursive=True)
     ps = ProjectSummary()
     for sp in source_paths:
         sa = SourceAnalysis.from_file(sp, os.path.basename(source_dir))

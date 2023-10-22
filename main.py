@@ -11,10 +11,11 @@ from pkg_manager import PackageManager, PkgEntry
 import os
 import subprocess
 from typing import Any
+import tarfile
 from stats_helper import get_project_sloc, get_project_source_language
 
 SOURCES_FILE_PATH = "/home/machiry/Downloads/debiancodeql/Sources"
-DOWNLOAD_PKG_DIR = "/home/machiry/Downloads/debiancodeql/downloaded_pkgs"
+DOWNLOAD_PKG_DIR = "/home/machiry/Downloads/debiancodeql/downloaded_pkgs/"
 SRC_URL = "http://mirror.math.ucdavis.edu/ubuntu/"
 FILTERED_CATEGORIES = ["text", "python", "php", "kernel", 
                        "javascript", "ruby", "perl", 
@@ -22,8 +23,10 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
                        "editors", "java", "metapackages", "translations",
                        "shells", "debian-installer", "doc"]
 PKG_FILTERS = ["glibc"]
-SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeql/codeqlrepo/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
+SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeqlrepo/codeql/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
 SETUP = True
+# This needs to be modified.
+LOCAL_SUDO_PASSWORD = "machiry_1337"
 
 def path_to_folder(currd: str):
     # get path to only folder in this directory
@@ -53,32 +56,42 @@ def is_pkg_ignored(pkg: PkgEntry) -> None:
         return True
     return False
 
+# Is the language C or C++?
+def is_c_or_cpp(lang: str) -> bool:
+    if lang is not None and \
+    (lang.lower() == "c" or lang.lower() == "c++"):
+        return True
+    return False
+
 def extract_pkg(p: PackageManager, pkg_name: str) -> Any:
     print("[+] Extracting package: {}".format(pkg_name))
     pkg_folder = os.path.join(DOWNLOAD_PKG_DIR, pkg_name)
     create_folder(pkg_folder)
     p.download_package_source(pkg_name, pkg_folder)
     for cu_file in os.listdir(pkg_folder):
-        if ".orig.tar" in cu_file:
+        if ".orig.tar" in cu_file and not cu_file.endswith(".asc"):
             #extract the archive
             print("[+] Extracting " + cu_file + "...")
-            cmd = "(" + "cd " + pkg_folder + " && " + "tar -xf " + str(cu_file) + ")"
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                print("[-] Failed to extract: " + cu_file)
-            else:
-                return path_to_folder(pkg_folder)
+            f = tarfile.open(os.path.join(pkg_folder, cu_file))
+            f.extractall(pkg_folder)
+            f.close()
+            return path_to_folder(pkg_folder)
     return None
 
 
 def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
     if not is_pkg_ignored(pkg):
+        # Check if package exists in the database.
+        res = DebianPackage.select().where(DebianPackage.name == pkg.pkg_name)
+        if res.exists():
+            print("[-] Package already exists: {}".format(pkg.pkg_name))
+            return
         print("[+] Adding package: {}".format(pkg.pkg_name))
         src_url = None
         deb_url = None
         dsc_url = None
         for curr_src_url in pkg.source_urls:
-            if ".orig.tar" in curr_src_url:
+            if ".orig.tar" in curr_src_url and not curr_src_url.endswith(".asc"):
                 src_url = curr_src_url
             elif curr_src_url.endswith(".dsc"):
                 dsc_url = curr_src_url
@@ -107,6 +120,15 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
         pkg_entry.deb_download_url = deb_url
         pkg_entry.dsc_download_url = dsc_url
         pkg_entry.src_extracted_dir = extracted_dir
+
+        # Compute dependencies.
+        dependency_list = p.dependency_map[pkg.pkg_name]
+        all_dependencies = []
+        for dependencies in dependency_list:
+            all_dependencies.append(dependencies)
+        
+        pkg_entry.dependency_list = " ".join(all_dependencies)
+
         vcs_type = get_vcs_type(pkg.vcs_info)
         VCSInfo.get_or_create(pkg=pkg_entry, 
                               vcs_url=pkg.vcs_info, 
@@ -125,7 +147,7 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
 
 def perform_codeql_analysis(p: PackageManager) -> None:
     for curr_pkg in DebianPackage.select():
-        if curr_pkg.has_src and (curr_pkg.language.language == "C" or curr_pkg.language.language == "C++"):
+        if curr_pkg.has_src and is_c_or_cpp(curr_pkg.language.language):
             codeql_result = curr_pkg.codeqlresult
             if codeql_result is not None:
                 if codeql_result.sarif_path is not None and os.path.exists(codeql_result.sarif_path):
@@ -151,22 +173,30 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                 # update the extracted dir
                 curr_pkg.src_extracted_dir = extracted_dir
                 curr_pkg.save()
+            # First install dependencies
+            dependency_list = curr_pkg.dependency_list
+            ret = subprocess.call(['echo ' + LOCAL_SUDO_PASSWORD + ' | sudo -S apt -yq install', dependency_list], shell=True)
+            failed_reason = ""
+            if ret != 0:
+                failed_reason = "Dependency installation failed"
+
             # Now perform the analysis
             codeql_folder = os.path.join(os.path.dirname(extracted_dir), "codeqldb")
             create_folder(codeql_folder)
             cmd = "(" + "cd " + extracted_dir + " && codeql database create " + codeql_folder + " --language=cpp)"
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
-                codeql_result.failed_reason = "Failed to create codeql database"
+                codeql_result.failed_reason = failed_reason + "\n Failed to create codeql database"
                 codeql_result.save()
                 print("[-] Failed to create codeql database for package: {}".format(curr_pkg.name))
                 continue
             codeql_result.codeql_db_path = codeql_folder
             codeql_result.save()
-            cmd = "(" + "cd " + extracted_dir + " && codeql database analyze " + codeql_folder + " --format=sarif-latest --output=codeqlresults.sarif " + SECURITY_EXTENDED_QLS + ")"
+            cmd = "(" + "cd " + extracted_dir + " && codeql database analyze " + \
+                   codeql_folder + " --format=sarif-latest --output=codeqlresults.sarif " + SECURITY_EXTENDED_QLS + ")"
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
-                codeql_result.failed_reason = "Failed to analyze codeql database"
+                codeql_result.failed_reason = failed_reason + "\n Failed to analyze codeql database"
                 codeql_result.save()
                 print("[-] Failed to analyze codeql database for package: {}".format(curr_pkg.name))
                 continue
@@ -184,12 +214,8 @@ def update_database_with_pkgs(src_url: str, sources_file: str) -> bool:
     print("[+] Updating database with packages")
     p = PackageManager(sources_file, src_url)
     p.build_pkg_entries()
-    i = 0
     for curr_pkg in p.all_pkg_entries.values():
-        if i > 4:
-            break
         add_pkg_to_database(p, curr_pkg)
-        i += 1
     return True
 
 def main():

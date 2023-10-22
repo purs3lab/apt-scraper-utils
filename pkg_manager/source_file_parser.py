@@ -12,6 +12,7 @@ MAINTINER_PREFIX = "Maintainer:"
 ORIGINAL_MAINTAINER_PREFIX = "Original-Maintainer:"
 UPLOADERS_PREFIX = "Uploaders:"
 VCS_PREFIXES = [
+    "Homepage:",
     "Debian-Vcs-Git:",
     "Debian-Vcs-Svn:",
     "Original-Vcs-Bzr:",

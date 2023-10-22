@@ -11,6 +11,7 @@ class DebianPackage(BaseModel):
     category = ForeignKeyField(PkgCategory, backref='pkgs')
     size_sloc = FloatField(default=0.0)
     has_src = BooleanField(default=True)
+    dependency_list = CharField(default=None, null=True)
     src_download_url = CharField(default=None, null=True)
     dsc_download_url = CharField(default=None, null=True)
     deb_download_url = CharField(default=None, null=True)
