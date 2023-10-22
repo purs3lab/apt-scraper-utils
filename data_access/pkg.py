@@ -14,6 +14,7 @@ class DebianPackage(BaseModel):
     src_download_url = CharField(default=None, null=True)
     dsc_download_url = CharField(default=None, null=True)
     deb_download_url = CharField(default=None, null=True)
+    src_extracted_dir = CharField(default=None, null=True)
 
 class VCSInfo(BaseModel):
     pkg = ForeignKeyField(DebianPackage, backref='vcs')
