@@ -7,8 +7,21 @@ BUILD_DEPENDENCIES_PREFIX = "Build-Depends:"
 BUILD_DEPENDENCIES_IND_PREFIX = "Build-Depends-Indep:"
 DIRECTORY_PREFIX = "Directory:"
 FILE_ENTRY_PREFIX = "Files:"
+SECTION_PREFIX = "Section:"
+MAINTINER_PREFIX = "Maintainer:"
+ORIGINAL_MAINTAINER_PREFIX = "Original-Maintainer:"
+UPLOADERS_PREFIX = "Uploaders:"
+VCS_PREFIXES = [
+    "Debian-Vcs-Git:",
+    "Debian-Vcs-Svn:",
+    "Original-Vcs-Bzr:",
+    "Original-Vcs-Git:",
+    "Orig-Vcs-Svn:",
+    "Vcs-Bzr:",
+    "Vcs-Git:",
+    "Vcs-Svn:"
+]
 
-logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.DEBUG)
 
 
 def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
@@ -49,6 +62,46 @@ def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
                     pkg_url = curr_line.split(DIRECTORY_PREFIX)[1].strip()
                     abs_url = base_url + "/" + pkg_url
                     to_ret_obj.set_pkg_url(abs_url)
+            
+            # This is the category of the package.
+            if curr_line.startswith(SECTION_PREFIX):
+                if to_ret_obj is not None:
+                    to_ret_obj.category = curr_line.split(SECTION_PREFIX)[1].strip()
+            
+            # These are email ids of the people responsible for the package.
+            if curr_line.startswith(MAINTINER_PREFIX):
+                if to_ret_obj is not None:
+                    curr_line = curr_line.split(MAINTINER_PREFIX)[1].strip()
+                    for l in curr_line.split(","):
+                        l = l.strip()
+                        if l:
+                            email_id = l.split("<")[1].split(">")[0].strip()
+                            to_ret_obj.contacts.add(email_id)
+            
+            if curr_line.startswith(ORIGINAL_MAINTAINER_PREFIX):
+                if to_ret_obj is not None:
+                    curr_line = curr_line.split(ORIGINAL_MAINTAINER_PREFIX)[1].strip()
+                    for l in curr_line.split(","):
+                        l = l.strip()
+                        if l:
+                            email_id = l.split("<")[1].split(">")[0].strip()
+                            to_ret_obj.contacts.add(email_id)
+             
+            if curr_line.startswith(UPLOADERS_PREFIX):
+                if to_ret_obj is not None:
+                    curr_line = curr_line.split(UPLOADERS_PREFIX)[1].strip()
+                    for l in curr_line.split(","):
+                        l = l.strip()
+                        if l:
+                            email_id = l.split("<")[1].split(">")[0].strip()
+                            to_ret_obj.contacts.add(email_id)
+            
+            for curr_vcs_prefix in VCS_PREFIXES:
+                if curr_line.startswith(curr_vcs_prefix):
+                    if to_ret_obj is not None:
+                        curr_line = curr_line.split(curr_vcs_prefix)[1].strip()
+                        curr_line = curr_line.split()[0].strip()
+                        to_ret_obj.vcs_info = curr_line
 
             # Files:
             if curr_line.startswith(FILE_ENTRY_PREFIX):

@@ -1,8 +1,8 @@
-from peewee import Model, MySQLDatabase
+from peewee import Model, SqliteDatabase
 
 DATABASE_FILE_PATH = '/home/machiry/Downloads/debiancodeql/debiancodeql.db'
 
-database = MySQLDatabase(DATABASE_FILE_PATH)
+database = SqliteDatabase(DATABASE_FILE_PATH)
 
 class BaseModel(Model):
     class Meta:
