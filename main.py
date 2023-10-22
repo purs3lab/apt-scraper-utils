@@ -22,6 +22,7 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
                        "editors", "java", "metapackages", "translations",
                        "shells", "debian-installer", "doc"]
 PKG_FILTERS = ["glibc"]
+SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeql/codeqlrepo/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
 SETUP = True
 
 def path_to_folder(currd: str):
@@ -52,11 +53,11 @@ def is_pkg_ignored(pkg: PkgEntry) -> None:
         return True
     return False
 
-def extract_pkg(p: PackageManager, pkg: PkgEntry) -> Any:
-    print("[+] Extracting package: {}".format(pkg.pkg_name))
-    pkg_folder = os.path.join(DOWNLOAD_PKG_DIR, pkg.pkg_name)
+def extract_pkg(p: PackageManager, pkg_name: str) -> Any:
+    print("[+] Extracting package: {}".format(pkg_name))
+    pkg_folder = os.path.join(DOWNLOAD_PKG_DIR, pkg_name)
     create_folder(pkg_folder)
-    p.download_package_source(pkg.pkg_name, pkg_folder)
+    p.download_package_source(pkg_name, pkg_folder)
     for cu_file in os.listdir(pkg_folder):
         if ".orig.tar" in cu_file:
             #extract the archive
@@ -85,8 +86,9 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
                 deb_url = curr_src_url
         pkg_lang = "UNKNOWN"
         pkg_sloc = 0.0
+        extracted_dir = None
         if src_url is not None:
-            extracted_dir = extract_pkg(p, pkg)
+            extracted_dir = extract_pkg(p, pkg.pkg_name)
             if extracted_dir is not None:
                 pkg_lang = get_project_source_language(extracted_dir)
                 pkg_sloc = get_project_sloc(pkg_lang, extracted_dir) * 1.0
@@ -104,6 +106,7 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
         pkg_entry.src_download_url = src_url
         pkg_entry.deb_download_url = deb_url
         pkg_entry.dsc_download_url = dsc_url
+        pkg_entry.src_extracted_dir = extracted_dir
         vcs_type = get_vcs_type(pkg.vcs_info)
         VCSInfo.get_or_create(pkg=pkg_entry, 
                               vcs_url=pkg.vcs_info, 
@@ -114,10 +117,65 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
             PkgDevelopers.get_or_create(pkg=pkg_entry, developer=dev_contact[0])
         
         pkg_entry.save()
+        CodeQLInfo.get_or_create(pkg=pkg_entry)[0].save()
 
         database.commit()
     else:
         print("[-] Ignoring package: {}".format(pkg.pkg_name))
+
+def perform_codeql_analysis(p: PackageManager) -> None:
+    for curr_pkg in DebianPackage.select():
+        if curr_pkg.has_src and (curr_pkg.language.language == "C" or curr_pkg.language.language == "C++"):
+            codeql_result = curr_pkg.codeqlresult
+            if codeql_result is not None:
+                if codeql_result.sarif_path is not None and os.path.exists(codeql_result.sarif_path):
+                    print("[+] CodeQL analysis already done for package: {}".format(curr_pkg.pkg_name))
+                    continue
+                if codeql_result.failed_reason is not None:
+                    print("[-] CodeQL analysis previously tried but failed for package: {}".format(curr_pkg.pkg_name))
+                    continue
+                if codeql_result.is_manually_analyzed is not None and codeql_result.is_manually_analyzed is True:
+                    print("[-] CodeQL results have been already analyzed for the package: {}".format(curr_pkg.pkg_name))
+                    continue
+            print("[+] Analyzing package: {}".format(curr_pkg.name))
+            if os.path.exists(curr_pkg.src_extracted_dir):
+                print("[+] Pakage is already extracted at: {}".format(curr_pkg.src_extracted_dir))
+            else:
+                print("[+] Package is not extracted, Extracting.")
+                extracted_dir = extract_pkg(p, curr_pkg.name)
+                if extracted_dir is None:
+                    print("[-] Failed to extract package: {}".format(curr_pkg.name))
+                    continue
+                else:
+                    print("[+] Extracted package at: {}".format(extracted_dir))
+                # update the extracted dir
+                curr_pkg.src_extracted_dir = extracted_dir
+                curr_pkg.save()
+            # Now perform the analysis
+            codeql_folder = os.path.join(os.path.dirname(extracted_dir), "codeqldb")
+            create_folder(codeql_folder)
+            cmd = "(" + "cd " + extracted_dir + " && codeql database create " + codeql_folder + " --language=cpp)"
+            ret = subprocess.call(cmd, shell=True)
+            if ret != 0:
+                codeql_result.failed_reason = "Failed to create codeql database"
+                codeql_result.save()
+                print("[-] Failed to create codeql database for package: {}".format(curr_pkg.name))
+                continue
+            codeql_result.codeql_db_path = codeql_folder
+            codeql_result.save()
+            cmd = "(" + "cd " + extracted_dir + " && codeql database analyze " + codeql_folder + " --format=sarif-latest --output=codeqlresults.sarif " + SECURITY_EXTENDED_QLS + ")"
+            ret = subprocess.call(cmd, shell=True)
+            if ret != 0:
+                codeql_result.failed_reason = "Failed to analyze codeql database"
+                codeql_result.save()
+                print("[-] Failed to analyze codeql database for package: {}".format(curr_pkg.name))
+                continue
+            else:
+                codeql_result.sarif_path = os.path.join(extracted_dir, "codeqlresults.sarif")
+                codeql_result.save()
+                print("[+] CodeQL analysis done for package: {}".format(curr_pkg.name))
+
+
 
 def update_database_with_pkgs(src_url: str, sources_file: str) -> bool:
     if DebianPackage.select().count() > 1:
@@ -135,8 +193,12 @@ def update_database_with_pkgs(src_url: str, sources_file: str) -> bool:
     return True
 
 def main():
-    setup_database()
-    update_database_with_pkgs(SRC_URL, SOURCES_FILE_PATH)
+    if SETUP:
+        setup_database()
+        update_database_with_pkgs(SRC_URL, SOURCES_FILE_PATH)
+    p = PackageManager(SOURCES_FILE_PATH, SRC_URL)
+    perform_codeql_analysis(p)
 
 if __name__ == "__main__":
     main()
+
