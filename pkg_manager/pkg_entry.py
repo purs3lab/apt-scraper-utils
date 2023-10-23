@@ -8,7 +8,7 @@ class PkgEntry:
         self.build_binaries = set()
         self.category = ""
         self.contacts = set()
-        self.vcs_info = None
+        self.vcs_info = "unknown"
 
     def add_dependencies(self, deps):
         if isinstance(deps, list) or isinstance(deps, set):
