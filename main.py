@@ -149,6 +149,8 @@ def perform_codeql_analysis(p: PackageManager) -> None:
     for curr_pkg in DebianPackage.select():
         if curr_pkg.has_src and is_c_or_cpp(curr_pkg.language.language):
             codeql_result = curr_pkg.codeqlresult
+            if len(codeql_result) > 0:
+                codeql_result = codeql_result[0]
             if codeql_result is not None:
                 if codeql_result.sarif_path is not None and os.path.exists(codeql_result.sarif_path):
                     print("[+] CodeQL analysis already done for package: {}".format(curr_pkg.pkg_name))
@@ -183,7 +185,7 @@ def perform_codeql_analysis(p: PackageManager) -> None:
             # Now perform the analysis
             codeql_folder = os.path.join(os.path.dirname(extracted_dir), "codeqldb")
             create_folder(codeql_folder)
-            cmd = "(" + "cd " + extracted_dir + " && codeql database create " + codeql_folder + " --language=cpp)"
+            cmd = "(" + "cd " + extracted_dir + " && codeql database create " + codeql_folder + " --overwrite --language=cpp)"
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
                 codeql_result.failed_reason = failed_reason + "\n Failed to create codeql database"
@@ -208,9 +210,6 @@ def perform_codeql_analysis(p: PackageManager) -> None:
 
 
 def update_database_with_pkgs(src_url: str, sources_file: str) -> bool:
-    if DebianPackage.select().count() > 1:
-        print("[+] Database already has packages, not updating")
-        return False
     print("[+] Updating database with packages")
     p = PackageManager(sources_file, src_url)
     p.build_pkg_entries()
