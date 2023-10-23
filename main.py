@@ -25,6 +25,7 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
 PKG_FILTERS = ["glibc"]
 SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeqlrepo/codeql/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
 SETUP = True
+CODEQL_ANALYSIS = False
 # This needs to be modified.
 LOCAL_SUDO_PASSWORD = "machiry_1337"
 
@@ -223,8 +224,10 @@ def main():
     if SETUP:
         setup_database()
         update_database_with_pkgs(SRC_URL, SOURCES_FILE_PATH)
-    p = PackageManager(SOURCES_FILE_PATH, SRC_URL)
-    perform_codeql_analysis(p)
+    if CODEQL_ANALYSIS:
+        print("[+] Performing CodeQL analysis")
+        p = PackageManager(SOURCES_FILE_PATH, SRC_URL)
+        perform_codeql_analysis(p)
 
 if __name__ == "__main__":
     main()
