@@ -103,8 +103,10 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
         if src_url is not None:
             extracted_dir = extract_pkg(p, pkg.pkg_name)
             if extracted_dir is not None:
-                pkg_lang = get_project_source_language(extracted_dir)
-                pkg_sloc = get_project_sloc(pkg_lang, extracted_dir) * 1.0
+                tmp_pkg_lang = get_project_source_language(extracted_dir)
+                if tmp_pkg_lang is not None:
+                    pkg_lang = tmp_pkg_lang
+                    pkg_sloc = get_project_sloc(pkg_lang, extracted_dir) * 1.0
         
         # Add language
         lang = SourceLanguage.get_or_create(language=pkg_lang)[0]
