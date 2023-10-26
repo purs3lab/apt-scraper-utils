@@ -8,6 +8,7 @@ class PkgEntry:
         self.build_binaries = set()
         self.category = ""
         self.contacts = set()
+        self.contact_email_map = {}
         self.vcs_info = "unknown"
 
     def add_dependencies(self, deps):

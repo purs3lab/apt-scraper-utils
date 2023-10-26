@@ -12,6 +12,7 @@ import os
 import subprocess
 from typing import Any, List, Optional, Tuple
 import statistics
+from .common_utils import path_to_folder, create_folder, is_an_interesting_project
 
 def get_pkgs_of_category(category: PkgCategory) -> Optional[List[Any]]:
     """
@@ -53,7 +54,7 @@ def main():
         cat_name = curr_cat.category_name
         all_pkgs = get_pkgs_of_category(curr_cat)
         src_pkgs = []
-        map(lambda x: src_pkgs.append(x) if x.has_src == True else None, all_pkgs)
+        map(lambda x: src_pkgs.append(x) if is_an_interesting_project(x), all_pkgs)
         # Ignore empty categories
         if len(src_pkgs) == 0:
             continue

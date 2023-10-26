@@ -13,6 +13,7 @@ import subprocess
 from typing import Any
 import tarfile
 from stats_helper import get_project_sloc, get_project_source_language
+from .common_utils import path_to_folder, create_folder, is_an_interesting_project
 
 SOURCES_FILE_PATH = "/home/machiry/projects/apt-scraper-utils/data_files/jammydebsource"
 DOWNLOAD_PKG_DIR = "/media/machiry/PurS3Disk/debiancodeql/pkgs/"
@@ -29,18 +30,6 @@ CODEQL_ANALYSIS = False
 # This needs to be modified.
 LOCAL_SUDO_PASSWORD = "machiry_1337"
 
-def path_to_folder(currd: str):
-    # get path to only folder in this directory
-    for cf in os.listdir(currd):
-        if os.path.isdir(os.path.join(currd, cf)):
-            return os.path.join(currd, cf)
-    return None
-
-def create_folder(dirn: str):
-    # create folder if not exists
-    if not os.path.isdir(dirn):
-        os.makedirs(dirn)
-
 def setup_database() -> None:
     database.connect()
     # Create tables if they don't exist
@@ -54,13 +43,6 @@ def is_pkg_ignored(pkg: PkgEntry) -> None:
     if pkg.pkg_name in PKG_FILTERS:
         return True
     if pkg.category in FILTERED_CATEGORIES:
-        return True
-    return False
-
-# Is the language C or C++?
-def is_c_or_cpp(lang: str) -> bool:
-    if lang is not None and \
-    (lang.lower() == "c" or lang.lower() == "c++"):
         return True
     return False
 
@@ -150,7 +132,7 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
 
 def perform_codeql_analysis(p: PackageManager) -> None:
     for curr_pkg in DebianPackage.select():
-        if curr_pkg.has_src and is_c_or_cpp(curr_pkg.language.language):
+        if is_an_interesting_project(curr_pkg):
             codeql_result = curr_pkg.codeqlresult
             if len(codeql_result) > 0:
                 codeql_result = codeql_result[0]
