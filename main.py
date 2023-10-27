@@ -23,6 +23,7 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
                        "editors", "java", "metapackages", "translations",
                        "shells", "debian-installer", "doc"]
 PKG_FILTERS = ["glibc"]
+IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live"]
 SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeqlrepo/codeql/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
 SETUP = True
 CODEQL_ANALYSIS = False
@@ -55,6 +56,9 @@ def is_pkg_ignored(pkg: PkgEntry) -> None:
         return True
     if pkg.category in FILTERED_CATEGORIES:
         return True
+    for curr_prefix in IGNORE_PKG_PREFIXES:
+        if pkg.pkg_name.startswith(curr_prefix):
+            return True
     return False
 
 # Is the language C or C++?
@@ -66,17 +70,21 @@ def is_c_or_cpp(lang: str) -> bool:
 
 def extract_pkg(p: PackageManager, pkg_name: str) -> Any:
     print("[+] Extracting package: {}".format(pkg_name))
-    pkg_folder = os.path.join(DOWNLOAD_PKG_DIR, pkg_name)
-    create_folder(pkg_folder)
-    p.download_package_source(pkg_name, pkg_folder)
-    for cu_file in os.listdir(pkg_folder):
-        if ".orig.tar" in cu_file and not cu_file.endswith(".asc"):
-            #extract the archive
-            print("[+] Extracting " + cu_file + "...")
-            f = tarfile.open(os.path.join(pkg_folder, cu_file))
-            f.extractall(pkg_folder)
-            f.close()
-            return path_to_folder(pkg_folder)
+    try:
+        pkg_folder = os.path.join(DOWNLOAD_PKG_DIR, pkg_name)
+        create_folder(pkg_folder)
+        p.download_package_source(pkg_name, pkg_folder)
+        for cu_file in os.listdir(pkg_folder):
+            if ".orig.tar" in cu_file and not cu_file.endswith(".asc"):
+                #extract the archive
+                print("[+] Extracting " + cu_file + "...")
+                f = tarfile.open(os.path.join(pkg_folder, cu_file))
+                f.extractall(pkg_folder)
+                f.close()
+                return path_to_folder(pkg_folder)
+    except Exception as e:
+        print("[-] Failed to extract package: {}".format(pkg_name))
+        print("[-] Exception: {}".format(e))
     return None
 
 
@@ -108,6 +116,9 @@ def add_pkg_to_database(p: PackageManager, pkg: PkgEntry) -> None:
                 if tmp_pkg_lang is not None:
                     pkg_lang = tmp_pkg_lang
                     pkg_sloc = get_project_sloc(pkg_lang, extracted_dir) * 1.0
+            else:
+                print("[-] Failed to extract package: {}".format(pkg.pkg_name))
+                return
         
         # Add language
         lang = SourceLanguage.get_or_create(language=pkg_lang)[0]
