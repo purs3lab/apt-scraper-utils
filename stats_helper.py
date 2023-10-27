@@ -49,6 +49,8 @@ def get_project_sloc(language: str, source_dir: str) -> int:
     for sp in source_paths:
         if os.path.isdir(sp):
             continue
+        if not os.path.exists(sp):
+            continue
         sa = SourceAnalysis.from_file(sp, os.path.basename(source_dir))
         ps.add(sa)
     # Count the number of lines of code for the given language
