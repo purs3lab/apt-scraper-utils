@@ -77,7 +77,10 @@ def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
                         l = l.strip()
                         if l:
                             email_id = l.split("<")[1].split(">")[0].strip()
+                            contact_name = l.split("<")[0].strip()
                             to_ret_obj.contacts.add(email_id)
+                            if contact_name:
+                                to_ret_obj.contact_email_map[email_id] = contact_name
             
             if curr_line.startswith(ORIGINAL_MAINTAINER_PREFIX):
                 if to_ret_obj is not None:
@@ -86,7 +89,10 @@ def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
                         l = l.strip()
                         if l:
                             email_id = l.split("<")[1].split(">")[0].strip()
+                            contact_name = l.split("<")[0].strip()
                             to_ret_obj.contacts.add(email_id)
+                            if contact_name:
+                                to_ret_obj.contact_email_map[email_id] = contact_name
              
             if curr_line.startswith(UPLOADERS_PREFIX):
                 if to_ret_obj is not None:
@@ -95,7 +101,10 @@ def parse_single_entry(all_lines, base_url) -> (PkgEntry, int):
                         l = l.strip()
                         if l:
                             email_id = l.split("<")[1].split(">")[0].strip()
+                            contact_name = l.split("<")[0].strip()
                             to_ret_obj.contacts.add(email_id)
+                            if contact_name:
+                                to_ret_obj.contact_email_map[email_id] = contact_name
             
             for curr_vcs_prefix in VCS_PREFIXES:
                 if curr_line.startswith(curr_vcs_prefix):
