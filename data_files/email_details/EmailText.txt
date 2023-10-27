@@ -1,0 +1,36 @@
+Hello NAME,
+
+I am Aravind Machiry, Assistant Professor at Purdue's ECE Department.
+
+We noticed that you are one of the owners or maintainers of PROJECT debian project.
+
+We want to understand whether you are using any Static Application Security Testing (SAST) tools (i.e., static checkers) as part of your project and if not then want to understand any challenges in using them.
+
+We are conducting a short anonymous survey (~2min) for this.
+
+Survey Link: https://purdue.ca1.qualtrics.com/jfe/form/SV_bsjJScol1rUHzhA
+
+As a participant, you will be asked to answer a few questions related to the use of SAST tools in your project.
+
+Your participation will greatly help in improving the security of Debian software ecosystem.
+
+However, participation is voluntary and required to be atleast 18 years old.
+
+- Thank you,
+  Aravind Machiry
+
+
+CONFIDENTIALITY:
+
+No personal information will be asked in the survey and individual responses will only be accessible to the PI and will not be shared. 
+
+CONTACT INFORMATION:
+
+The study is led by Dr. Aravind Machiry, Assistant Professor of Electrical & Computer Engineering Department Purdue University (amachiry@purdue.edu).
+
+IRB INFORMATION:
+
+The Purdue Institutional Review Board, #2023-1695 has approved this research.
+
+If you have questions about your rights while taking part in the study or have concerns about the treatment of research participants, please call the Human Research Protection Program at (765) 494-5942 or email irb@purdue.edu.
+
