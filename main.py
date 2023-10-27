@@ -13,18 +13,12 @@ import subprocess
 from typing import Any
 import tarfile
 from stats_helper import get_project_sloc, get_project_source_language
-from .common_utils import path_to_folder, create_folder, is_an_interesting_project
+from common_utils import path_to_folder, create_folder, is_an_interesting_project, is_pkg_ignored
 
 SOURCES_FILE_PATH = "/home/machiry/projects/apt-scraper-utils/data_files/jammydebsource"
 DOWNLOAD_PKG_DIR = "/media/machiry/PurS3Disk/debiancodeql/pkgs/"
 SRC_URL = "http://mirror.math.ucdavis.edu/ubuntu/"
-FILTERED_CATEGORIES = ["text", "python", "php", "kernel", 
-                       "javascript", "ruby", "perl", 
-                       "tex", "vcs", "fonts", "golang", "php", 
-                       "editors", "java", "metapackages", "translations",
-                       "shells", "debian-installer", "doc"]
-PKG_FILTERS = ["glibc"]
-IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live"]
+
 SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeqlrepo/codeql/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
 SETUP = True
 CODEQL_ANALYSIS = False
@@ -39,16 +33,6 @@ def setup_database() -> None:
                             ContactType, VCSType, CodeQLInfo], safe=True)
     setup_vcs_types()
     setup_contact_types()
-
-def is_pkg_ignored(pkg: PkgEntry) -> None:
-    if pkg.pkg_name in PKG_FILTERS:
-        return True
-    if pkg.category in FILTERED_CATEGORIES:
-        return True
-    for curr_prefix in IGNORE_PKG_PREFIXES:
-        if pkg.pkg_name.startswith(curr_prefix):
-            return True
-    return False
 
 def extract_pkg(p: PackageManager, pkg_name: str) -> Any:
     print("[+] Extracting package: {}".format(pkg_name))

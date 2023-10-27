@@ -13,6 +13,14 @@ import subprocess
 from typing import Any, List, Optional, Tuple
 import statistics
 
+FILTERED_CATEGORIES = ["text", "python", "php", "kernel", 
+                       "javascript", "ruby", "perl", 
+                       "tex", "vcs", "fonts", "golang", "php", 
+                       "editors", "java", "metapackages", "translations",
+                       "shells", "debian-installer", "doc"]
+PKG_FILTERS = ["glibc"]
+IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live"]
+
 def path_to_folder(currd: str):
     # get path to only folder in this directory
     for cf in os.listdir(currd):
@@ -32,8 +40,23 @@ def is_c_or_cpp(lang: str) -> bool:
         return True
     return False
 
+def is_pkg_name_ignored(pkg_name: str) -> bool:
+    if pkg_name in PKG_FILTERS:
+        return True
+    for curr_prefix in IGNORE_PKG_PREFIXES:
+        if pkg_name.startswith(curr_prefix):
+            return True
+    return False
+
+def is_pkg_ignored(pkg: PkgEntry) -> None:
+    if pkg.category in FILTERED_CATEGORIES:
+        return True
+    return is_pkg_name_ignored(pkg.pkg_name)
+
 def is_an_interesting_project(curr_pkg: DebianPackage) -> bool:
     """
     Check if the current package is interesting.
     """
+    if is_pkg_name_ignored(curr_pkg.name):
+        return False
     return curr_pkg.has_src and is_c_or_cpp(curr_pkg.language.language)
