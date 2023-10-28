@@ -18,8 +18,8 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
                        "tex", "vcs", "fonts", "golang", "php", 
                        "editors", "java", "metapackages", "translations",
                        "shells", "debian-installer", "doc"]
-PKG_FILTERS = ["glibc", "ubuntu-themes"]
-IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live"]
+PKG_FILTERS = ["glibc", "ubuntu-themes", "gdb", "rustc", "binutils", "erlang"]
+IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live", "gcc"]
 
 def path_to_folder(currd: str):
     # get path to only folder in this directory
