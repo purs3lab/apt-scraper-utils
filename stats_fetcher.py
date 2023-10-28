@@ -12,7 +12,7 @@ import os
 import subprocess
 from typing import Any, List, Optional, Tuple
 import statistics
-from .common_utils import path_to_folder, create_folder, is_an_interesting_project
+from common_utils import path_to_folder, create_folder, is_an_interesting_project
 
 def get_pkgs_of_category(category: PkgCategory) -> Optional[List[Any]]:
     """

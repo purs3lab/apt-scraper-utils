@@ -13,7 +13,7 @@ import subprocess
 from typing import Any
 import tarfile
 from stats_helper import get_project_sloc, get_project_source_language
-from .common_utils import path_to_folder, create_folder, is_an_interesting_project
+from common_utils import path_to_folder, create_folder, is_an_interesting_project
 
 SOURCES_FILE_PATH = "/home/machiry/projects/apt-scraper-utils/data_files/jammydebsource"
 SRC_URL = "http://mirror.math.ucdavis.edu/ubuntu/"
@@ -30,7 +30,7 @@ def main():
 
     p = PackageManager(SOURCES_FILE_PATH, SRC_URL)
     p.build_pkg_entries()
-    print("[+} Writing to file: {}".format(DEV_EMAIL_FILE))
+    print("[+] Writing to file: {}".format(DEV_EMAIL_FILE))
     fp = open(DEV_EMAIL_FILE, "w")
     fp.write("Package, Developer Name, Developer Email\n")
     # print("Package, Developer Name, Developer Email")
