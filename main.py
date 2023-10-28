@@ -142,6 +142,7 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                     print("[-] CodeQL results have been already analyzed for the package: {}".format(curr_pkg.pkg_name))
                     continue
             print("[+] Analyzing package: {}".format(curr_pkg.name))
+            extracted_dir = curr_pkg.src_extracted_dir
             if os.path.exists(curr_pkg.src_extracted_dir):
                 print("[+] Pakage is already extracted at: {}".format(curr_pkg.src_extracted_dir))
             else:
