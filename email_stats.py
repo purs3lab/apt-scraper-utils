@@ -52,4 +52,5 @@ def main():
     print("[+] Finished writing to file {}.".format(DEV_EMAIL_FILE))
 
 if __name__ == "__main__":
+    database.connect()
     main()
