@@ -133,13 +133,13 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                 codeql_result = codeql_result[0]
             if codeql_result is not None:
                 if codeql_result.sarif_path is not None and os.path.exists(codeql_result.sarif_path):
-                    print("[+] CodeQL analysis already done for package: {}".format(curr_pkg.pkg_name))
+                    print("[+] CodeQL analysis already done for package: {}".format(curr_pkg.name))
                     continue
                 if codeql_result.failed_reason is not None:
-                    print("[-] CodeQL analysis previously tried but failed for package: {}".format(curr_pkg.pkg_name))
+                    print("[-] CodeQL analysis previously tried but failed for package: {}".format(curr_pkg.name))
                     continue
                 if codeql_result.is_manually_analyzed is not None and codeql_result.is_manually_analyzed is True:
-                    print("[-] CodeQL results have been already analyzed for the package: {}".format(curr_pkg.pkg_name))
+                    print("[-] CodeQL results have been already analyzed for the package: {}".format(curr_pkg.name))
                     continue
             print("[+] Analyzing package: {}".format(curr_pkg.name))
             extracted_dir = curr_pkg.src_extracted_dir
