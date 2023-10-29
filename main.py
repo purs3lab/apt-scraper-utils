@@ -188,6 +188,8 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                 codeql_result.save()
                 print("[+] CodeQL analysis done for package: {}".format(curr_pkg.name))
 
+            database.commit()
+
 
 
 def update_database_with_pkgs(src_url: str, sources_file: str) -> bool:
@@ -205,6 +207,7 @@ def main():
     if CODEQL_ANALYSIS:
         print("[+] Performing CodeQL analysis")
         p = PackageManager(SOURCES_FILE_PATH, SRC_URL)
+        p.build_pkg_entries()
         perform_codeql_analysis(p)
 
 if __name__ == "__main__":
