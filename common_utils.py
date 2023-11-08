@@ -18,7 +18,7 @@ FILTERED_CATEGORIES = ["text", "python", "php", "kernel",
                        "tex", "vcs", "fonts", "golang", "php", 
                        "editors", "java", "metapackages", "translations",
                        "shells", "debian-installer", "doc"]
-PKG_FILTERS = ["glibc", "ubuntu-themes", "gdb", "rustc", "binutils", "erlang"]
+PKG_FILTERS = ["glibc", "ubuntu-themes", "gdb", "rustc", "binutils", "erlang", "ceph", "frr", "suitesparse"]
 IGNORE_PKG_PREFIXES = ["llvm", "linux-", "live", "gcc"]
 
 def path_to_folder(currd: str):

@@ -16,7 +16,7 @@ from stats_helper import get_project_sloc, get_project_source_language
 from common_utils import path_to_folder, create_folder, is_an_interesting_project, is_pkg_ignored
 
 SOURCES_FILE_PATH = "/home/machiry/projects/apt-scraper-utils/data_files/jammydebsource"
-DOWNLOAD_PKG_DIR = "/media/machiry/PurS3Disk/debiancodeql/pkgs/"
+DOWNLOAD_PKG_DIR = "/home/machiry/Downloads/debianpkgs/pkgs/"
 SRC_URL = "http://mirror.math.ucdavis.edu/ubuntu/"
 
 SECURITY_EXTENDED_QLS = "/home/machiry/tools/codeqlrepo/codeql/cpp/ql/src/codeql-suites/cpp-security-extended.qls"
@@ -132,12 +132,12 @@ def perform_codeql_analysis(p: PackageManager) -> None:
             if len(codeql_result) > 0:
                 codeql_result = codeql_result[0]
             if codeql_result is not None:
-                if codeql_result.sarif_path is not None and os.path.exists(codeql_result.sarif_path):
+                if codeql_result.sarif_path is not None:# and os.path.exists(codeql_result.sarif_path):
                     print("[+] CodeQL analysis already done for package: {}".format(curr_pkg.name))
                     continue
-                if codeql_result.failed_reason is not None:
-                    print("[-] CodeQL analysis previously tried but failed for package: {}".format(curr_pkg.name))
-                    continue
+                #if codeql_result.failed_reason is not None:
+                #    print("[-] CodeQL analysis previously tried but failed for package: {}".format(curr_pkg.name))
+                #    continue
                 if codeql_result.is_manually_analyzed is not None and codeql_result.is_manually_analyzed is True:
                     print("[-] CodeQL results have been already analyzed for the package: {}".format(curr_pkg.name))
                     continue
@@ -156,9 +156,12 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                 # update the extracted dir
                 curr_pkg.src_extracted_dir = extracted_dir
                 curr_pkg.save()
+            fp = open("processing_pkg.txt", "w")
+            fp.write(curr_pkg.name)
+            fp.close()
             # First install dependencies
             dependency_list = curr_pkg.dependency_list
-            ret = subprocess.call(['echo ' + LOCAL_SUDO_PASSWORD + ' | sudo -S apt -yq install', dependency_list], shell=True)
+            ret = subprocess.call(['echo ' + LOCAL_SUDO_PASSWORD + ' | sudo -S apt-get -y install ' + dependency_list], shell=True)
             failed_reason = ""
             if ret != 0:
                 failed_reason = "Dependency installation failed"
@@ -167,16 +170,17 @@ def perform_codeql_analysis(p: PackageManager) -> None:
             codeql_folder = os.path.join(os.path.dirname(extracted_dir), "codeqldb")
             create_folder(codeql_folder)
             cmd = "(" + "cd " + extracted_dir + " && codeql database create " + codeql_folder + " --overwrite --language=cpp)"
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                codeql_result.failed_reason = failed_reason + "\n Failed to create codeql database"
+            ret = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if ret.returncode != 0:
+                codeql_result.failed_reason = failed_reason + "\n Failed to create codeql database\nOutput=" + ret.stdout + "\nError=" + ret.stderr
                 codeql_result.save()
                 print("[-] Failed to create codeql database for package: {}".format(curr_pkg.name))
                 continue
             codeql_result.codeql_db_path = codeql_folder
             codeql_result.save()
+            sarif_file_name = curr_pkg.name + ".sarif"
             cmd = "(" + "cd " + extracted_dir + " && codeql database analyze " + \
-                   codeql_folder + " --format=sarif-latest --output=codeqlresults.sarif " + SECURITY_EXTENDED_QLS + ")"
+                   codeql_folder + " --format=sarif-latest --output=" + sarif_file_name + " " + SECURITY_EXTENDED_QLS + ")"
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
                 codeql_result.failed_reason = failed_reason + "\n Failed to analyze codeql database"
@@ -184,7 +188,7 @@ def perform_codeql_analysis(p: PackageManager) -> None:
                 print("[-] Failed to analyze codeql database for package: {}".format(curr_pkg.name))
                 continue
             else:
-                codeql_result.sarif_path = os.path.join(extracted_dir, "codeqlresults.sarif")
+                codeql_result.sarif_path = os.path.join(extracted_dir, sarif_file_name)
                 codeql_result.save()
                 print("[+] CodeQL analysis done for package: {}".format(curr_pkg.name))
 

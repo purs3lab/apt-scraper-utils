@@ -1,6 +1,6 @@
 from peewee import Model, SqliteDatabase
 
-DATABASE_FILE_PATH = '/media/machiry/PurS3Disk/debiancodeql/debiancodeql.db'
+DATABASE_FILE_PATH = '/home/machiry/Downloads/debiancodeql.db'
 
 database = SqliteDatabase(DATABASE_FILE_PATH)
 
